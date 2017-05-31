@@ -15,3 +15,13 @@ def get_BOV_days(dt_start,dt_end):
     dates = sorted(dates)
     return dates
 
+def get_BOV_symbols():
+    filename = "pythonfiles/listaIbov/ibov_26012014.csv"
+    reader = csv.reader(open(filename,'rU'),delimiter=',')
+    symbols =[]
+
+    for row in reader:
+        simbolo = str(row[0])
+        symbols.append(simbolo)
+        
+    return symbols
