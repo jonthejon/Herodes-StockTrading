@@ -25,3 +25,25 @@ def get_BOV_symbols():
         symbols.append(simbolo)
         
     return symbols
+
+def get_IBRX50_symbols():
+    filename = "pythonfiles/listaIbov/ibrx50_08042014.csv"
+    reader = csv.reader(open(filename,'rU'),delimiter=',')
+    symbols =[]
+
+    for row in reader:
+        simbolo = str(row[0])
+        symbols.append(simbolo)
+        
+    return symbols
+
+def get_BD_symbols():
+    filename = "pythonfiles/listaIbov/BD_26012014.csv"
+    reader = csv.reader(open(filename,'rU'),delimiter=',')
+    symbols =[]
+
+    for row in reader:
+        simbolo = str(row[0])
+        symbols.append(simbolo)
+        
+    return symbols
