@@ -29,3 +29,21 @@ def get_delta(mme_array):
         delta.append(diff)
     
     return delta
+
+def get_signal(ndarray):
+
+    signal = 0
+
+    if ndarray[-1] < 0:
+        signal = -1
+    elif ndarray[-1] > 0:
+        signal = 1
+    elif ndarray[-1] == 0:
+        if ndarray[-2] < 0:
+            signal = -1
+        elif ndarray[-2] > 0:
+            signal = 1
+        elif ndarray[-2] == 0:
+            signal = 1
+    
+    return signal
