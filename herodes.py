@@ -205,3 +205,487 @@ def herodes(frame_abe,frame_max,frame_min,frame_fech):
     dataframe = pd.DataFrame(corpo_dt, columns=colunas, index=indice)
 
     return controle,dataframe
+
+
+def herodes2(frame_abe,frame_max,frame_min,frame_fech,proibido):
+    
+    n = 15
+    datas = frame_fech.index
+    controle = 1
+    pd_frame_dummy = 0
+    abr = frame_abe.values
+    maxi = frame_max.values
+    mini = frame_min.values
+    fech = frame_fech.values
+    if fech[-1] < 9:
+        controle = -1
+        return controle,pd_frame_dummy
+    
+    MMSd = ind.mms(fech, 24)
+    MMEd = ind.mme(fech, 24)
+    delta_mms = get_delta(MMSd)
+    delta_mme = get_delta(MMEd)
+    signal_d = get_signal(delta_mme)
+    direcao = 0
+    
+    #if signal_d < 0:
+        
+        #controle = -1
+        #return controle,pd_frame_dummy
+
+    
+    vermelho,azul = ind.new_macd(fech)
+    
+    if azul[-1] < 0:
+        direcao = -1
+    elif azul[-1] >= 0:
+        direcao = 1
+        
+    # controle para proibir operacoes short
+    if direcao < 0:
+        if proibido < 0:
+            direcao = direcao * (-1)
+        elif proibido > 0:
+            direcao = direcao * (1)
+        
+    # PRIMEIRO FILTRO: MACD-S quebra a barreira do 0.0
+    if direcao > 0:
+        if azul[-1] < 0 or azul[-1] >= 0 and azul[-2] >= 0 or azul[-1] >= 0 and vermelho[-1] >= 0.5:
+            controle = -1
+            return controle,pd_frame_dummy
+    elif direcao < 0:
+        if azul[-1] > 0 or azul[-1] <= 0 and azul[-2] <= 0 or azul[-1] <= 0 and vermelho[-1] <= -0.5:
+            controle = -1
+            return controle,pd_frame_dummy
+    
+    IFR = ind.ifr(fech)
+    
+    # FILTROS DE GAIN
+    
+    sentido_deltas = delta_mme
+    sentido_alvo = get_signal(sentido_deltas)
+    bin_filtro_for_cv = get_consist(MMEd,sentido_alvo)
+    bin_filtro_f_mme = get_consist(delta_mme,sentido_alvo)
+    macd_f_abs = get_absolute(vermelho)
+    teste_max_macd_hist = max(macd_f_abs[len(macd_f_abs)-n:])
+    teste_init_macd = abs(vermelho[-1])
+    
+    # FILTRO 1 DE GAIN: eh preciso ter consistencia tanto no mmed quanto no delta do mmed
+    if bin_filtro_for_cv != 1 or bin_filtro_f_mme != 1:
+        controle = -1
+        return controle,pd_frame_dummy
+    
+    # FILTRO 2 DE GAIN: eh proibido operar ativos onde o macd-f inicial eh o maximo do escopo
+    if teste_init_macd >= teste_max_macd_hist:
+        controle = -1
+        return controle,pd_frame_dummy
+    
+    #if signal_d > 0:
+        
+        #if azul[-1] < 0 or azul[-1] >= 0 and azul[-2] >= 0 or azul[-1] >= 0 and vermelho[-1] >= 0.5:
+            #controle = -1
+            #return controle,pd_frame_dummy
+    
+    #elif signal_d < 0:
+        
+        #if azul[-1] > 0 or azul[-1] <= 0 and azul[-2] <= 0 or azul[-1] <= 0 and vermelho[-1] <= -0.5:
+            #controle = -1
+            #return controle,pd_frame_dummy
+    
+    
+    ssz = ind.ssz2(abr,maxi,mini,fech,direcao)
+
+    # o ativo passou por todos os filtros... devo retorna-lo mostrando os ultimos n dias atraves de um pandas dataframe
+    
+    indice = datas[len(datas)-n:]
+    colunas = ["stop$","MACD-S","MACD-F","MME","MME_delta","MMS","MMS_delta","abertura","IFR"]
+    MACDS_ret = azul[len(azul)-n:]
+    MACDF_ret = vermelho[len(vermelho)-n:]
+    MME_ret = MMEd[len(MMEd)-n:]
+    MMEd_ret = delta_mme[len(delta_mme)-n:]
+    MMS_ret = MMSd[len(MMSd)-n:]
+    MMSd_ret = delta_mms[len(delta_mms)-n:]
+    abe_ret = abr[len(abr)-n:]
+    IFR_ret = IFR[len(IFR)-n:]
+    
+    
+    corpo_dt = {'stop$':ssz, 'MACD-S':MACDS_ret, 'MACD-F':MACDF_ret, 'MME':MME_ret, 'MME_delta':MMEd_ret, 'MMS':MMS_ret, 'MMS_delta':MMSd_ret, 'abertura':abe_ret, 'IFR':IFR_ret}
+
+    dataframe = pd.DataFrame(corpo_dt, columns=colunas, index=indice)
+
+    return controle,dataframe
+
+
+def herodes2_total(frame_abe,frame_max,frame_min,frame_fech,proibido):
+    
+    n = 15
+    datas = frame_fech.index
+    controle = 1
+    pd_frame_dummy = 0
+    abr = frame_abe.values
+    maxi = frame_max.values
+    mini = frame_min.values
+    fech = frame_fech.values
+    if fech[-1] < 9:
+        controle = -1
+        return controle,pd_frame_dummy
+    
+    MMSd = ind.mms(fech, 24)
+    MMEd = ind.mme(fech, 24)
+    delta_mms = get_delta(MMSd)
+    delta_mme = get_delta(MMEd)
+    signal_d = get_signal(delta_mme)
+    direcao = 0
+    
+    #if signal_d < 0:
+        
+        #controle = -1
+        #return controle,pd_frame_dummy
+
+    
+    vermelho,azul = ind.new_macd(fech)
+    
+    if azul[-1] < 0:
+        direcao = -1
+    elif azul[-1] >= 0:
+        direcao = 1
+        
+    # controle para proibir operacoes short
+    if direcao < 0:
+        if proibido < 0:
+            direcao = direcao * (-1)
+        elif proibido > 0:
+            direcao = direcao * (1)
+        
+    # PRIMEIRO FILTRO: MACD-S quebra a barreira do 0.0
+    if direcao > 0:
+        if azul[-1] < 0 or azul[-1] >= 0 and azul[-2] >= 0 or azul[-1] >= 0 and vermelho[-1] >= 0.5:
+            controle = -1
+            return controle,pd_frame_dummy
+    elif direcao < 0:
+        if azul[-1] > 0 or azul[-1] <= 0 and azul[-2] <= 0 or azul[-1] <= 0 and vermelho[-1] <= -0.5:
+            controle = -1
+            return controle,pd_frame_dummy
+    
+    IFR = ind.ifr(fech)
+    
+    '''# FILTROS DE GAIN
+    
+    sentido_deltas = delta_mme
+    sentido_alvo = get_signal(sentido_deltas)
+    bin_filtro_for_cv = get_consist(MMEd,sentido_alvo)
+    bin_filtro_f_mme = get_consist(delta_mme,sentido_alvo)
+    macd_f_abs = get_absolute(vermelho)
+    teste_max_macd_hist = max(macd_f_abs[len(macd_f_abs)-n:])
+    teste_init_macd = abs(vermelho[-1])
+    
+    # FILTRO 1 DE GAIN: eh preciso ter consistencia tanto no mmed quanto no delta do mmed
+    if bin_filtro_for_cv != 1 or bin_filtro_f_mme != 1:
+        controle = -1
+        return controle,pd_frame_dummy
+    
+    # FILTRO 2 DE GAIN: eh proibido operar ativos onde o macd-f inicial eh o maximo do escopo
+    if teste_init_macd >= teste_max_macd_hist:
+        controle = -1
+        return controle,pd_frame_dummy'''
+    
+    #if signal_d > 0:
+        
+        #if azul[-1] < 0 or azul[-1] >= 0 and azul[-2] >= 0 or azul[-1] >= 0 and vermelho[-1] >= 0.5:
+            #controle = -1
+            #return controle,pd_frame_dummy
+    
+    #elif signal_d < 0:
+        
+        #if azul[-1] > 0 or azul[-1] <= 0 and azul[-2] <= 0 or azul[-1] <= 0 and vermelho[-1] <= -0.5:
+            #controle = -1
+            #return controle,pd_frame_dummy
+    
+    
+    ssz = ind.ssz2(abr,maxi,mini,fech,direcao)
+
+    # o ativo passou por todos os filtros... devo retorna-lo mostrando os ultimos n dias atraves de um pandas dataframe
+    
+    indice = datas[len(datas)-n:]
+    colunas = ["stop$","MACD-S","MACD-F","MME","MME_delta","MMS","MMS_delta","abertura","IFR"]
+    MACDS_ret = azul[len(azul)-n:]
+    MACDF_ret = vermelho[len(vermelho)-n:]
+    MME_ret = MMEd[len(MMEd)-n:]
+    MMEd_ret = delta_mme[len(delta_mme)-n:]
+    MMS_ret = MMSd[len(MMSd)-n:]
+    MMSd_ret = delta_mms[len(delta_mms)-n:]
+    abe_ret = abr[len(abr)-n:]
+    IFR_ret = IFR[len(IFR)-n:]
+    
+    corpo_dt = {'stop$':ssz, 'MACD-S':MACDS_ret, 'MACD-F':MACDF_ret, 'MME':MME_ret, 'MME_delta':MMEd_ret, 'MMS':MMS_ret, 'MMS_delta':MMSd_ret, 'abertura':abe_ret, 'IFR':IFR_ret}
+
+    dataframe = pd.DataFrame(corpo_dt, columns=colunas, index=indice)
+
+    return controle,dataframe
+
+def herodes2_sem_filtro(frame_abe,frame_max,frame_min,frame_fech):
+    
+    n = 15
+    datas = frame_fech.index
+    #controle = 1
+    #pd_frame_dummy = 0
+    abr = frame_abe.values
+    maxi = frame_max.values
+    mini = frame_min.values
+    fech = frame_fech.values
+    #if fech[-1] < 9:
+        #controle = -1
+        #return controle,pd_frame_dummy
+    
+    MMSd = ind.mms(fech, 24)
+    MMEd = ind.mme(fech, 24)
+    delta_mms = get_delta(MMSd)
+    delta_mme = get_delta(MMEd)
+    signal_d = get_signal(delta_mme)
+    direcao = 0
+    
+    #if signal_d < 0:
+        
+        #controle = -1
+        #return controle,pd_frame_dummy
+
+    
+    vermelho,azul = ind.new_macd(fech)
+    
+    if azul[-1] < 0:
+        direcao = -1
+    elif azul[-1] >= 0:
+        direcao = 1
+        
+    # controle para proibir operacoes short
+    #if direcao < 0:
+        #if proibido < 0:
+            #direcao = direcao * (-1)
+        #elif proibido > 0:
+            #direcao = direcao * (1)
+        
+    # PRIMEIRO FILTRO: MACD-S quebra a barreira do 0.0
+    #if direcao > 0:
+        #if azul[-1] < 0 or azul[-1] >= 0 and azul[-2] >= 0 or azul[-1] >= 0 and vermelho[-1] >= 0.5:
+            #controle = -1
+            #return controle,pd_frame_dummy
+    #elif direcao < 0:
+        #if azul[-1] > 0 or azul[-1] <= 0 and azul[-2] <= 0 or azul[-1] <= 0 and vermelho[-1] <= -0.5:
+            #controle = -1
+            #return controle,pd_frame_dummy
+    
+    #if signal_d > 0:
+        
+        #if azul[-1] < 0 or azul[-1] >= 0 and azul[-2] >= 0 or azul[-1] >= 0 and vermelho[-1] >= 0.5:
+            #controle = -1
+            #return controle,pd_frame_dummy
+    
+    #elif signal_d < 0:
+        
+        #if azul[-1] > 0 or azul[-1] <= 0 and azul[-2] <= 0 or azul[-1] <= 0 and vermelho[-1] <= -0.5:
+            #controle = -1
+            #return controle,pd_frame_dummy
+    
+    
+    ssz = ind.ssz2(abr,maxi,mini,fech,direcao)
+
+    # o ativo passou por todos os filtros... devo retorna-lo mostrando os ultimos n dias atraves de um pandas dataframe
+    
+    indice = datas[len(datas)-n:]
+    colunas = ["stop$","MACD-S","MACD-F","MME","MME_delta","MMS","MMS_delta","abertura"]
+    MACDS_ret = azul[len(azul)-n:]
+    MACDF_ret = vermelho[len(vermelho)-n:]
+    MME_ret = MMEd[len(MMEd)-n:]
+    MMEd_ret = delta_mme[len(delta_mme)-n:]
+    MMS_ret = MMSd[len(MMSd)-n:]
+    MMSd_ret = delta_mms[len(delta_mms)-n:]
+    abe_ret = abr[len(abr)-n:]
+    
+    corpo_dt = {'stop$':ssz, 'MACD-S':MACDS_ret, 'MACD-F':MACDF_ret, 'MME':MME_ret, 'MME_delta':MMEd_ret, 'MMS':MMS_ret, 'MMS_delta':MMSd_ret, 'abertura':abe_ret}
+
+    dataframe = pd.DataFrame(corpo_dt, columns=colunas, index=indice)
+
+    return dataframe
+
+
+def herodes2_macd_f(frame_abe,frame_max,frame_min,frame_fech):
+    
+    n = 15
+    datas = frame_fech.index
+    #controle = 1
+    pd_frame_dummy = 0
+    abr = frame_abe.values
+    maxi = frame_max.values
+    mini = frame_min.values
+    fech = frame_fech.values
+    #if fech[-1] < 9:
+        #controle = -1
+        #return controle,pd_frame_dummy
+    
+    MMSd = ind.mms(fech, 24)
+    MMEd = ind.mme(fech, 24)
+    delta_mms = get_delta(MMSd)
+    delta_mme = get_delta(MMEd)
+    signal_d = get_signal(delta_mme)
+    #direcao = 0
+    
+    #if signal_d < 0:
+        
+        #controle = -1
+        #return controle,pd_frame_dummy
+
+    # PRIMEIRO FILTRO: MACD-S quebra a barreira do 0.0
+    vermelho,azul = ind.new_macd(fech)
+    minimo_hoje = mini[-1]
+    
+    #if azul[-1] < 0 or azul[-1] >= 0 and azul[-2] >= 0 or azul[-1] >= 0 and vermelho[-1] >= 0.5:
+        #controle = -1
+        #return controle,pd_frame_dummy
+    
+    #if azul[-1] < 0:
+        #direcao = -1
+    #elif azul[-1] > 0:
+        #direcao = 1
+    
+    #if signal_d > 0:
+        
+        #if azul[-1] < 0 or azul[-1] >= 0 and azul[-2] >= 0 or azul[-1] >= 0 and vermelho[-1] >= 0.5:
+            #controle = -1
+            #return controle,pd_frame_dummy
+    
+    #elif signal_d < 0:
+        
+        #if azul[-1] > 0 or azul[-1] <= 0 and azul[-2] <= 0 or azul[-1] <= 0 and vermelho[-1] <= -0.5:
+            #controle = -1
+            #return controle,pd_frame_dummy
+    
+    
+    #ssz = ind.ssz2(abr,maxi,mini,fech,direcao)
+
+    # o ativo passou por todos os filtros... devo retorna-lo mostrando os ultimos n dias atraves de um pandas dataframe
+    
+    #indice = datas[len(datas)-n:]
+    #colunas = ["stop$","MACD-S","MACD-F","MME","MME_delta","MMS","MMS_delta","abertura"]
+    #MACDS_ret = azul[len(azul)-n:]
+    #MACDF_ret = vermelho[len(vermelho)-n:]
+    #MME_ret = MMEd[len(MMEd)-n:]
+    #MMEd_ret = delta_mme[len(delta_mme)-n:]
+    #MMS_ret = MMSd[len(MMSd)-n:]
+    #MMSd_ret = delta_mms[len(delta_mms)-n:]
+    #abe_ret = abr[len(abr)-n:]
+    
+    #corpo_dt = {'stop$':ssz, 'MACD-S':MACDS_ret, 'MACD-F':MACDF_ret, 'MME':MME_ret, 'MME_delta':MMEd_ret, 'MMS':MMS_ret, 'MMS_delta':MMSd_ret, 'abertura':abe_ret}
+
+    #dataframe = pd.DataFrame(corpo_dt, columns=colunas, index=indice)
+
+    return vermelho,azul,minimo_hoje
+
+def herodes2_lote(frame_abe,frame_max,frame_min,frame_fech,proibido):
+    
+    n = 15
+    datas = frame_fech.index
+    controle = 1
+    pd_frame_dummy = 0
+    abr = frame_abe.values
+    maxi = frame_max.values
+    mini = frame_min.values
+    fech = frame_fech.values 
+    
+    if fech[-1] < 9:
+        controle = -1
+        return controle,pd_frame_dummy
+    
+    MMSd = ind.mms(fech, 24)
+    MMEd = ind.mme(fech, 24)
+    delta_mms = get_delta(MMSd)
+    delta_mme = get_delta(MMEd)
+    signal_d = get_signal(delta_mme)
+    direcao = 0
+    
+    #if signal_d < 0:
+        
+        #controle = -1
+        #return controle,pd_frame_dummy
+
+    
+    vermelho,azul = ind.new_macd(fech)
+    
+    if azul[-1] < 0:
+        direcao = -1
+    elif azul[-1] >= 0:
+        direcao = 1
+        
+    # controle para proibir operacoes short
+    if direcao < 0:
+        if proibido < 0:
+            direcao = direcao * (-1)
+        elif proibido > 0:
+            direcao = direcao * (1)
+        
+    # PRIMEIRO FILTRO: MACD-S quebra a barreira do 0.0
+    if direcao > 0:
+        if azul[-1] < 0 or azul[-1] >= 0 and azul[-2] >= 0 or azul[-1] >= 0 and vermelho[-1] >= 0.5:
+            controle = -1
+            return controle,pd_frame_dummy
+    elif direcao < 0:
+        if azul[-1] > 0 or azul[-1] <= 0 and azul[-2] <= 0 or azul[-1] <= 0 and vermelho[-1] <= -0.5:
+            controle = -1
+            return controle,pd_frame_dummy
+    
+    IFR = ind.ifr(fech)
+    
+    # FILTROS DE GAIN
+    
+    sentido_deltas = delta_mme
+    sentido_alvo = get_signal(sentido_deltas)
+    bin_filtro_for_cv = get_consist(MMEd,sentido_alvo)
+    bin_filtro_f_mme = get_consist(delta_mme,sentido_alvo)
+    macd_f_abs = get_absolute(vermelho)
+    teste_max_macd_hist = max(macd_f_abs[len(macd_f_abs)-n:])
+    teste_init_macd = abs(vermelho[-1])
+    
+    # FILTRO 1 DE GAIN: eh preciso ter consistencia tanto no mmed quanto no delta do mmed
+    if bin_filtro_for_cv != 1 or bin_filtro_f_mme != 1:
+        controle = -1
+        return controle,pd_frame_dummy
+    
+    # FILTRO 2 DE GAIN: eh proibido operar ativos onde o macd-f inicial eh o maximo do escopo
+    if teste_init_macd >= teste_max_macd_hist:
+        controle = -1
+        return controle,pd_frame_dummy
+    
+    #if signal_d > 0:
+        
+        #if azul[-1] < 0 or azul[-1] >= 0 and azul[-2] >= 0 or azul[-1] >= 0 and vermelho[-1] >= 0.5:
+            #controle = -1
+            #return controle,pd_frame_dummy
+    
+    #elif signal_d < 0:
+        
+        #if azul[-1] > 0 or azul[-1] <= 0 and azul[-2] <= 0 or azul[-1] <= 0 and vermelho[-1] <= -0.5:
+            #controle = -1
+            #return controle,pd_frame_dummy
+    
+    
+    ssz = ind.ssz2(abr,maxi,mini,fech,direcao)
+
+    # o ativo passou por todos os filtros... devo retorna-lo mostrando os ultimos n dias atraves de um pandas dataframe
+    
+    indice = datas[len(datas)-n:]
+    colunas = ["stop$","MACD-S","MACD-F","MME","MME_delta","MMS","MMS_delta","abertura","IFR"]
+    MACDS_ret = azul[len(azul)-n:]
+    MACDF_ret = vermelho[len(vermelho)-n:]
+    MME_ret = MMEd[len(MMEd)-n:]
+    MMEd_ret = delta_mme[len(delta_mme)-n:]
+    MMS_ret = MMSd[len(MMSd)-n:]
+    MMSd_ret = delta_mms[len(delta_mms)-n:]
+    abe_ret = abr[len(abr)-n:]
+    IFR_ret = IFR[len(IFR)-n:]
+    
+    
+    corpo_dt = {'stop$':ssz, 'MACD-S':MACDS_ret, 'MACD-F':MACDF_ret, 'MME':MME_ret, 'MME_delta':MMEd_ret, 'MMS':MMS_ret, 'MMS_delta':MMSd_ret, 'abertura':abe_ret, 'IFR':IFR_ret}
+
+    dataframe = pd.DataFrame(corpo_dt, columns=colunas, index=indice)
+
+    return controle,dataframe
+
