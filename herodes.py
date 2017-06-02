@@ -689,3 +689,86 @@ def herodes2_lote(frame_abe,frame_max,frame_min,frame_fech,proibido):
 
     return controle,dataframe
 
+def herodes3(frame_abe,frame_max,frame_min,frame_fech,proibido):
+    
+    n = 15
+    datas = frame_fech.index
+    controle = 1
+    pd_frame_dummy = 0
+    abr = frame_abe.values
+    maxi = frame_max.values
+    mini = frame_min.values
+    fech = frame_fech.values
+    
+    # FILTRO ZERO: nao operar nenhum ativo com valor menor que 9
+    if fech[-1] < 9:
+        controle = -1
+        return controle,pd_frame_dummy
+    
+    d_semana_array = ind.dadosSemanais(frame_fech)
+    MMEs = ind.mme(d_semana_array, 10)
+    MMEd = ind.mme(fech, 20)
+    delta_s = get_delta(MMEs)
+    delta_d = get_delta(MMEd)
+    signal_s = get_signal(delta_s)
+    signal_d = get_signal(delta_d)
+    
+    # PRIMEIRO FILTRO: direcao da MMEs = direcao da MMEd
+    if signal_d != signal_s:
+        controle = -1
+        return controle,pd_frame_dummy
+    
+    # FILTRO EXTRA: proibido operar vendido
+    if proibido < 0:
+        if signal_d < 0:
+            controle = -1
+            return controle,pd_frame_dummy
+    
+    # FILTRO 2/3: MMEd cruza MMEs e mantem uma consistencia de mais 1 dia
+    if signal_d > 0:
+        if MMEd[-2] >= MMEs[-2] and MMEd[-3] < MMEs[-3]:
+            delta_mm_1 = MMEd[-1] - MMEs[-1]
+            delta_mm_2 = MMEd[-2] - MMEs[-2]
+            if delta_mm_1 > delta_mm_2:
+                pass
+            else:
+                controle = -1
+                return controle,pd_frame_dummy                
+        else:
+            controle = -1
+            return controle,pd_frame_dummy
+        
+    if signal_d < 0:
+        if MMEd[-2] <= MMEs[-2] and MMEd[-3] > MMEs[-3]:
+            delta_mm_1 = MMEd[-1] - MMEs[-1]
+            delta_mm_2 = MMEd[-2] - MMEs[-2]
+            if delta_mm_1 < delta_mm_2:
+                pass
+            else:
+                controle = -1
+                return controle,pd_frame_dummy                
+        else:
+            controle = -1
+            return controle,pd_frame_dummy    
+
+
+    
+    
+    
+    #ssz = ind.ssz(abr,maxi,mini,signal_d)
+    ssz = ind.ssz2(abr,maxi,mini,fech,signal_d)
+
+    # o ativo passou por todos os filtros... devo retorna-lo mostrando os ultimos n dias atraves de um pandas dataframe
+    
+    indice = datas[len(datas)-n:]
+    colunas = ["stop$","Abe","Fech","MMEs","MMEd"]
+    fech_ret = fech[len(fech)-n:]
+    abre_ret = abr[len(abr)-n:]
+    MMEs_ret = MMEs[len(MMEs)-n:]
+    MMEd_ret = MMEd[len(MMEd)-n:]
+
+    corpo_dt = {'stop$':ssz, 'Abe':abre_ret, 'Fech':fech_ret, 'MMEs':MMEs_ret, 'MMEd':MMEd_ret}
+
+    dataframe = pd.DataFrame(corpo_dt, columns=colunas, index=indice)
+
+    return controle,dataframe
