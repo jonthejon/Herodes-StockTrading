@@ -47,3 +47,31 @@ def get_signal(ndarray):
             signal = 1
     
     return signal
+
+def get_consist(ndarray,signal_d):
+    
+    binary = 0
+    last_days = ndarray[len(ndarray)-4:]
+    primes_array = np.array([3,5,7])
+    peneira = []
+    
+    for i in np.arange(3):
+        if signal_d > 0:
+            if last_days[i] < last_days[i+1]:
+                peneira.append(True)
+            elif last_days[i] >= last_days[i+1]:
+                peneira.append(False)
+        if signal_d < 0:
+            if last_days[i] > last_days[i+1]:
+                peneira.append(True)
+            elif last_days[i] <= last_days[i+1]:
+                peneira.append(False)
+    
+    peneira_array = np.array(peneira)
+    filtro = primes_array[peneira_array]
+    
+    if filtro.sum() > 8:
+        binary = 1
+    
+    return binary
+
