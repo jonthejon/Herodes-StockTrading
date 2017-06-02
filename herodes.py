@@ -20,3 +20,12 @@ def get_absolute(ndarray):
     
     return absoluto
 
+def get_delta(mme_array):
+    
+    delta = []
+    
+    for i in np.arange(len(mme_array)-1):
+        diff = mme_array[i+1] - mme_array[i]
+        delta.append(diff)
+    
+    return delta
